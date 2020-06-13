@@ -4,11 +4,11 @@ from os import system
 from tkinter import ttk
 
 class Device:
-    def __init__(self, name, address):
+    def __init__(self, name: str, address: str):
         self.name = name
         self.address = address
 
-class Controller:
+class ControllerConnection:
     def __init__(self):
         self.socket = None
         self.service_uuid = "00001101-0000-1000-8000-00805F9B34FB"
@@ -24,6 +24,7 @@ class Controller:
         else:
             for address, name in devices:
                 self.devices.append(Device(name, address))
+        return len(self.devices)
         
     def connect(self, device: Device) -> bool:
         if self.socket != None:
@@ -46,7 +47,7 @@ class Controller:
                 print ("The connection failed")
                 return False
 
-    def disconenct(self):
+    def disconnect(self):
         if self.socket == None:
             return False
         print ("Closing connection...")
@@ -60,4 +61,4 @@ class Controller:
         try:
             self.socket.send(message)
         except:
-            self.disconenct()
+            self.disconnect()
