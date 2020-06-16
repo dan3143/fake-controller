@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox as msg
 from bt_connection import ControllerConnection
 from bt_connection import Device
+from os.path import exists
 
 class Point:
     def __init__(self, x: float, y: float):
@@ -43,6 +44,8 @@ class Application(ttk.Frame):
 
     def load_history(self):
         self.history = None
+        if not exists(self.history_filename):
+            return
         history = open(self.history_filename, 'r')
         dev = history.readline()
         if dev.strip() != "":
@@ -73,8 +76,7 @@ class Application(ttk.Frame):
         self.status_lb.grid(row=3, column=0, columnspan=7, sticky=NSEW)
     
     def send(self, value: str):
-        if self.controller.socket != None and self.controller.socket.connected:
-            self.controller.send(value)
+        self.controller.send(value)
     
     def search(self):
         self.set_status("searching...")
@@ -100,9 +102,12 @@ class Application(ttk.Frame):
             self.set_status("connection failed")
             
     def on_quit(self):
-        history = open(self.history_filename, 'w')
+        print(self.history)
         if self.history is not None:
-            history.write(self.history.name + "," + self.history.address +  "\n")
+            print("Opening history for writing")
+            history = open(self.history_filename, 'w')
+            history.write(self.history.name + "," + self.history.address)
+            history.close()
         self.controller.disconnect()
         self.root.quit()
 
@@ -123,12 +128,12 @@ class Control(ttk.Frame):
         pass
 
     def create_widgets(self):
-        self.up_btn = ttk.Button(self, text="▲", command=self.app.send("up"))
-        self.down_btn = ttk.Button(self, text="▼", command=self.app.send("down"))
-        self.left_btn = ttk.Button(self, text="◄", command=self.app.send("left"))
-        self.right_btn = ttk.Button(self, text="►", command=self.app.send("right"))
-        self.a_btn = ttk.Button(self, text="A", command=self.app.send("a"))
-        self.b_btn = ttk.Button(self, text="B", command=self.app.send("b"))
+        self.up_btn = ttk.Button(self, text="▲", command=lambda: self.app.send("up"))
+        self.down_btn = ttk.Button(self, text="▼", command=lambda: self.app.send("down"))
+        self.left_btn = ttk.Button(self, text="◄", command=lambda: self.app.send("left"))
+        self.right_btn = ttk.Button(self, text="►", command=lambda: self.app.send("right"))
+        self.a_btn = ttk.Button(self, text="A", command=lambda: self.app.send("a"))
+        self.b_btn = ttk.Button(self, text="B", command=lambda: self.app.send("b"))
         self.canvas = Canvas(self, width=200, height=200)
         self.canvas.bind("<B1-Motion>", self.move_rectangle)
         self.canvas.bind("<ButtonRelease-1>", self.reset_rectangle)
@@ -159,7 +164,6 @@ class Control(ttk.Frame):
                                      fill="#000")
         coords = self.canvas.coords(self.rectangle)
         self.initial_rect = (coords[0], coords[1], size)
-        print((w, h))
 
     def move_rectangle(self, event):
         (x, y, size) = self.initial_rect

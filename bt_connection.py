@@ -40,7 +40,7 @@ class ControllerConnection:
             print ("Connecting to",device.name,"'s ",name,"service...")
             self.socket = bt.BluetoothSocket(bt.RFCOMM)
             try:
-                self.socket = self.socket.connect((device.address, port))
+                self.socket.connect((device.address, port))
                 print ("Successful connection")
                 return True
             except:
@@ -59,6 +59,19 @@ class ControllerConnection:
         if self.socket == None:
             return
         try:
+            print("Sending ",message)
             self.socket.send(message)
         except:
             self.disconnect()
+
+    def receive(self):
+        if self.socket is None:
+            print(self.socket)
+            return
+        print ("Recieving...")
+        while True:
+            data = self.socket.recv(1024)
+            if data:
+                print(data.decode("utf-8"))                
+            else:
+                break
