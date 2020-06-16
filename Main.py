@@ -27,6 +27,7 @@ class Application(ttk.Frame):
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
         root.resizable(False, False)
+        root.protocol('WM_DELETE_WINDOW', app.on_quit)
         root.mainloop()
     
     def __init__(self, root: Tk):
@@ -102,9 +103,7 @@ class Application(ttk.Frame):
             self.set_status("connection failed")
             
     def on_quit(self):
-        print(self.history)
         if self.history is not None:
-            print("Opening history for writing")
             history = open(self.history_filename, 'w')
             history.write(self.history.name + "," + self.history.address)
             history.close()
