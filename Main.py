@@ -168,11 +168,15 @@ class Control(ttk.Frame):
                                      fill="#000")
         coords = self.canvas.coords(self.rectangle)
         self.initial_rect = (coords[0], coords[1], size)
+        self.previous_pos = (0, 0)
 
     def move_rectangle(self, event):
         (x, y, size) = self.initial_rect
         if is_in_circle(self.circle, Point(event.x, event.y)):
-            self.app.send((event.x - (x+size), event.y - (y+size)))
+            new_pos = (event.x - (x+size), event.y - (y+size))
+            message = "{}, {}, {}, {}".format(new_pos[0], new_pos[1], self.previous_pos[0], self.previous_pos[1])
+            self.app.send(message)
+            self.previous_pos = new_pos
             self.canvas.moveto(self.rectangle, event.x - size, event.y - size)
         
     def reset_rectangle(self, event):

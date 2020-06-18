@@ -1,8 +1,5 @@
 import bluetooth as bt
 import threading
-import tkinter as tk
-from os import system
-from tkinter import ttk
 
 class Device:
     def __init__(self, name: str, address: str):
