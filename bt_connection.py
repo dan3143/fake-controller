@@ -1,4 +1,5 @@
 import bluetooth as bt
+import threading
 import tkinter as tk
 from os import system
 from tkinter import ttk
@@ -29,6 +30,7 @@ class ControllerConnection:
     def connect(self, device: Device) -> bool:
         if self.socket != None:
             return False
+        print ("Searching for service with uuid",self.service_uuid)
         services = bt.find_service(uuid=self.service_uuid, address=device.address)
         if len(services) == 0:
             print ("Could not find service")
@@ -59,19 +61,25 @@ class ControllerConnection:
         if self.socket == None:
             return
         try:
-            print("Sending ",message)
+            print("Sending",message)
             self.socket.send(message)
         except:
             self.disconnect()
 
-    def receive(self):
+    def start_receiving(self, callback):
         if self.socket is None:
-            print(self.socket)
             return
         print ("Recieving...")
-        while True:
+        self.stop = False
+        self.receive_thread = threading.Thread(target=self._receive, args=(callback,))
+        self.receive_thread.start()
+        
+
+    def stop_receiving(self):
+        self.stop = True
+
+    def _receive(self, callback):
+        while not self.stop:
             data = self.socket.recv(1024)
             if data:
-                print(data.decode("utf-8"))                
-            else:
-                break
+                callback(data)

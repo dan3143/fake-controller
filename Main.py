@@ -39,9 +39,13 @@ class Application(ttk.Frame):
         self.create_widgets()
         self.grid_widgets()
         
+    def received(self, message: bytes):
+        self.set_status("recieved " + message.decode("utf-8"))
+
     def create_variables(self):
         self.status = StringVar(self, "Status: disconnected")
         self.controller = ControllerConnection()
+        
 
     def load_history(self):
         self.history = None
@@ -98,6 +102,7 @@ class Application(ttk.Frame):
         self.set_status("connecting to " + device.name)
         if self.controller.connect(device):
             self.set_status("connected to " + device.name)
+            self.controller.start_receiving(self.received)
             self.history = device
         else:
             self.set_status("connection failed")
