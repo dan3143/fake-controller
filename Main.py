@@ -4,6 +4,7 @@ from tkinter import messagebox as msg
 from bt_connection import ControllerConnection
 from bt_connection import Device
 from os.path import exists
+import threading
 
 class Point:
     def __init__(self, x: float, y: float):
@@ -19,7 +20,7 @@ class Application(ttk.Frame):
 
     @classmethod
     def main(cls):
-        NoDefaultRoot()
+        #NoDefaultRoot()
         root = Tk()
         app = cls(root)
         app.grid(sticky=N)
@@ -46,14 +47,13 @@ class Application(ttk.Frame):
         self.status = StringVar(self, "Status: disconnected")
         self.controller = ControllerConnection()
         
-
     def load_history(self):
         self.history = None
         if not exists(self.history_filename):
             return
         history = open(self.history_filename, 'r')
-        dev = history.readline()
-        if dev.strip() != "":
+        dev = history.readline().strip()
+        if dev != "":
             dev = dev.split(",")
             self.history = Device(dev[0], dev[1])  
 
@@ -84,13 +84,18 @@ class Application(ttk.Frame):
         self.controller.send(value)
     
     def search(self):
+        self.n = 0
         self.set_status("searching...")
-        n = self.controller.search_devices()
-        self.set_status("found " + str(n) + " devices")
-        if n > 0:
-            self.set_disconnect_enabled(True)
+        search_thread = threading.Thread(target=self._search)
+        search_thread.start()
+
+    def _search(self):
+        self.n = self.controller.search_devices()
+        if self.n > 0:
             for device in self.controller.devices:
-                self.device_menu.add_command(label=device.name, command=lambda: self.connect(device))
+                if self.history == None or (self.history != None and self.history.address != device.address):
+                    self.device_menu.add_command(label=device.name, command=lambda: self.connect(device))
+        self.set_status("found " + str(self.n) + " devices")
     
     def set_disconnect_enabled(self, enabled: bool):
         value = "normal"
@@ -99,9 +104,10 @@ class Application(ttk.Frame):
         self.bluetooth_menu.entryconfig("Disconnect", state=value)
     
     def connect(self, device: Device):
-        self.set_status("connecting to " + device.name)
+        self.set_status("connecting to " + device.address)
         if self.controller.connect(device):
             self.set_status("connected to " + device.name)
+            self.set_disconnect_enabled(True)
             self.controller.start_receiving(self.received)
             self.history = device
         else:

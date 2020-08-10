@@ -1,5 +1,6 @@
 import bluetooth as bt
 import threading
+import select
 
 class Device:
     def __init__(self, name: str, address: str):
@@ -27,7 +28,7 @@ class ControllerConnection:
     def connect(self, device: Device) -> bool:
         if self.socket != None:
             return False
-        print ("Searching for service with uuid",self.service_uuid)
+        print ("Searching service",self.service_uuid,"in",device.address)
         services = bt.find_service(uuid=self.service_uuid, address=device.address)
         if len(services) == 0:
             print ("Could not find service")
@@ -36,8 +37,9 @@ class ControllerConnection:
             service = services[0]
             port = service["port"]
             name = service["name"]
-            print ("Connecting to",device.name,"'s ",name,"service...")
+            print ("Connecting to",device.name+"'s ",name,"service...")
             self.socket = bt.BluetoothSocket(bt.RFCOMM)
+            #self.socket.setblocking(0)
             try:
                 self.socket.connect((device.address, port))
                 print ("Successful connection")
@@ -51,6 +53,10 @@ class ControllerConnection:
             return False
         print ("Closing connection...")
         self.socket.close()
+        self.socket = None
+        self.stop_receiving()
+        while self.receiving:
+            pass
         print ("Connection closed")
         return True
     
@@ -69,14 +75,28 @@ class ControllerConnection:
         print ("Recieving...")
         self.stop = False
         self.receive_thread = threading.Thread(target=self._receive, args=(callback,))
-        self.receive_thread.start()
-        
+        self.receive_thread.start() 
+        self.receiving = True
 
     def stop_receiving(self):
+        print("Stopping receive thread...")
         self.stop = True
 
     def _receive(self, callback):
         while not self.stop:
-            data = self.socket.recv(1024)
-            if data:
-                callback(data)
+            ready = select.select([self.socket], [], [], 5)
+            if ready[0]:
+                data = self.socket.recv(1024)
+                if data:
+                    callback(data)
+            else:
+                print("Did not receive data")
+        self.receiving = False
+        print("Stopped receiving")
+
+
+if __name__ == '__main__':
+    from sys import argv
+    blt = ControllerConnection()
+    print(blt.search_devices())
+
