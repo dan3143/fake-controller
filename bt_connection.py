@@ -61,10 +61,10 @@ class ControllerConnection:
         return True
     
     def send(self, message: str):
+        print("Sending",message)
         if self.socket == None:
             return
         try:
-            print("Sending",message)
             self.socket.send(message)
         except:
             self.disconnect()
