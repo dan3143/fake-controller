@@ -138,12 +138,14 @@ class Control(ttk.Frame):
         pass
 
     def create_widgets(self):
-        self.up_btn = ttk.Button(self, text="▲", command=lambda: self.app.send("up"))
-        self.down_btn = ttk.Button(self, text="▼", command=lambda: self.app.send("down"))
-        self.left_btn = ttk.Button(self, text="◄", command=lambda: self.app.send("left"))
-        self.right_btn = ttk.Button(self, text="►", command=lambda: self.app.send("right"))
-        self.a_btn = ttk.Button(self, text="A", command=lambda: self.app.send("a"))
-        self.b_btn = ttk.Button(self, text="B", command=lambda: self.app.send("b"))
+        self.up_btn = ttk.Button(self, text="▲", command=lambda: self.app.send("up:1"))
+        self.down_btn = ttk.Button(self, text="▼", command=lambda: self.app.send("down:1"))
+        self.left_btn = ttk.Button(self, text="◄", command=lambda: self.app.send("left:1"))
+        self.right_btn = ttk.Button(self, text="►", command=lambda: self.app.send("right:1"))
+        self.a_btn = ttk.Button(self, text="A", command=lambda: self.app.send("a:1"))
+        self.b_btn = ttk.Button(self, text="B", command=lambda: self.app.send("b:1"))
+        self.trigger = ttk.Scale(self, from_=100, to=0, orient=VERTICAL, command=self.send_scale_value)
+        self.trigger.bind("<ButtonRelease-1>" , self.reset_scale)
         self.canvas = Canvas(self, width=200, height=200)
         self.canvas.bind("<B1-Motion>", self.move_rectangle)
         self.canvas.bind("<ButtonRelease-1>", self.reset_rectangle)
@@ -155,8 +157,15 @@ class Control(ttk.Frame):
         self.right_btn.grid(row=1, column=2, sticky=W, ipady=15)
         self.a_btn.grid(row=1, column=3, padx=(10, 0), ipady=15)
         self.b_btn.grid(row=1, column=4, ipady=15)
-        self.canvas.grid(row=0, rowspan=3, column=5, columnspan=2, padx=15, sticky=NSEW)        
+        self.canvas.grid(row=0, rowspan=3, column=5, columnspan=1, padx=15, sticky=NSEW)
+        self.trigger.grid(row=0, rowspan=4, column=6)  
 
+    def send_scale_value(self, val):
+        self.app.send("t0:" + str(float(val)/100))
+    
+    def reset_scale(self, scale):
+        self.trigger.set(0)
+    
     def draw_circle(self, radius: int):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
@@ -180,7 +189,8 @@ class Control(ttk.Frame):
         (x, y, size) = self.initial_rect
         if is_in_circle(self.circle, Point(event.x, event.y)):
             new_pos = (event.x - (x+size), event.y - (y+size))
-            message = "{}, {}, {}, {}".format(new_pos[0], new_pos[1], self.previous_pos[0], self.previous_pos[1])
+            diff = [new_pos[0] - self.previous_pos[0], new_pos[1] - self.previous_pos[1]]
+            message = "j0:{},{},0".format(diff[0], diff[1])
             self.app.send(message)
             self.previous_pos = new_pos
             self.canvas.moveto(self.rectangle, event.x - size, event.y - size)
@@ -191,7 +201,6 @@ class Control(ttk.Frame):
 
 def is_in_circle(circle: Circle, position: Point) -> bool:
     return (position.x - circle.position.x)**2 + (position.y - circle.position.y)**2 <= circle.radius**2
-
 
 if __name__ == "__main__":
     Application.main()
